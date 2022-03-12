@@ -42,8 +42,8 @@ def parse_message_list(message_list):
     messages.sort(key=lambda x: x.timestamp.timestamp())
     return messages
 
-def parse_log_file(path):
-    with open(path) as raw_html:
+def parse_log_file(input_path, output_path):
+    with open(input_path) as raw_html, open(output_path, 'x', encoding='utf-8') as out:
         for line in raw_html:
             search_for = 'var msgdata = "'
             dump_start = line.find(search_for)
@@ -52,9 +52,7 @@ def parse_log_file(path):
                 raw_message_dump = line[dump_start + len(search_for):-2]
                 decoded_message_dump = base64.b64decode(raw_message_dump)
                 messages = parse_message_list(json.loads(decoded_message_dump))
-                for message in messages:
-                    if message.__class__ == AbilityCheckMessage:
-                        print('%s\n' % message.pretty_print())
+                out.writelines(['%s\n' % (message.pretty_print()) for message in messages])
                 return
             else:
                 continue
@@ -63,7 +61,8 @@ def parse_log_file(path):
 
 if __name__ == '__main__':
     arg_parser = argparse.ArgumentParser(description='Parse a HTML file containing roll20.net chat message')
-    arg_parser.add_argument('path', metavar='path', type=str, help='the path of the HTML file to parse')
+    arg_parser.add_argument('input_path', metavar='input_path', type=str, help='the path of the HTML file to parse')
+    arg_parser.add_argument('output_path', metavar='output_path', type=str, help='the path of the file to output parsed result to')
     args = arg_parser.parse_args()
 
-    parse_log_file(args.path)
+    parse_log_file(args.input_path, args.output_path)
