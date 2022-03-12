@@ -1,6 +1,5 @@
 from collections import namedtuple
 import json
-import re
 
 DiceRoll = namedtuple('DiceRoll', 'num_dice dice_size')
 # Roll types as represented in the log dump
@@ -23,22 +22,27 @@ class SimpleRoll:
     def pretty_print(self):
         return 'rolling %s: %s' % (self.original_roll, self.total)
 
-class AttackRoll:
+"""
+Ability rolls, including attack rolls and ability checks such as Intimidation, Persuation etc
+"""
+class AbilityRoll:
     """
     Arguments:
-    roll_attempts -- a list of rolls representing an attack roll, and any additional rolls from advantage/disadvantage.
+    name -- the name of the ability used (e.g. intimidation), or the name of the weapon used to make the
+        attack (e.g. Longsword)
+    roll_attempts -- a list of rolls representing an ability roll, and any additional rolls from advantage/disadvantage.
         Advantage/disadvantage and which of the roll attempts was chosen is not recorded here.
     """
-    def __init__(self, attack_name, roll_attempts):
-        self.attack_name = attack_name
+    def __init__(self, name, roll_attempts):
+        self.name = name
         self.roll_attempts = roll_attempts
 
     def __repr__(self):
-        return 'AttackRoll(attack_name=%r, roll_attempts=%r)' % (
-                self.attack_name, self.roll_attempts)
+        return 'AbilityRoll(name=%r, roll_attempts=%r)' % (
+                self.name, self.roll_attempts)
 
     def pretty_print(self):
-        return '%s: %s' % (self.attack_name, '|'.join([str(x.total) for x in self.roll_attempts]))
+        return '%s: %s' % (self.name, '|'.join([str(x.total) for x in self.roll_attempts]))
 
 
 class DamageRoll:
@@ -69,17 +73,3 @@ def parse_roll_content(original_roll, content):
         elif (roll.get('type') == MODIFIER):
             roll_result.modifier = roll.get('expr')
     return roll_result
-
-def parse_attack_name(content):
-    attack_name_patterns = (
-        '\{\{rname=\[(.+?)\]',
-        '\{\{rname=(.+?)\}\}'
-    )
-    # format the list of possible patterns as alternations, with each option enclosed in a non-capturing group
-    search_pattern = re.compile('(?:' + ')|(?:'.join(attack_name_patterns) + ')')
-    match = re.search(search_pattern, content)
-    groups = match.groups()
-    if match:
-        return next((x for x in groups if x is not None), None)
-    else:
-        return ''
