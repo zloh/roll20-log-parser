@@ -1,7 +1,7 @@
 import json
 import base64
 import argparse
-from message import Message, RollMessage, AttackRollMessage
+from message import Message, RollMessage, AttackRollMessage, DamageRollMessage
 
 def parse_message_list(message_list):
     messages = []
@@ -17,14 +17,14 @@ def parse_message_list(message_list):
                     message['content'], message['origRoll']))
             elif message.get('inlinerolls'):
                 template = message.get('rolltemplate')
-
                 if template == 'atk':
                     messages.append(AttackRollMessage(message['who'], message['avatar'], message['.priority'],
                         message['content'], message['inlinerolls']))
                 elif template == 'atkdmg':
                     pass
                 elif template == 'dmg':
-                    pass
+                    messages.append(DamageRollMessage(message['who'], message['avatar'], message['.priority'],
+                        message['content'], message['inlinerolls']))
                 # these don't have origRolls; instead they use the inlinerolls attribute
 #                 messages.append(RollMessage(message['who'], message['avatar'], message['.priority'],
 #                     message['content'], ''))
@@ -44,7 +44,8 @@ def parse_log_file(path):
                 decoded_message_dump = base64.b64decode(raw_message_dump)
                 messages = parse_message_list(json.loads(decoded_message_dump))[0:1000]
                 for message in messages:
-                    if message.__class__ == RollMessage or message.__class__ == AttackRollMessage:
+                    if message.__class__ == RollMessage or message.__class__ == AttackRollMessage \
+                            or message.__class__ == DamageRollMessage:
                         print('%s\n' % message.pretty_print())
                 return
             else:

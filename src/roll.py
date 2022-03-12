@@ -44,16 +44,18 @@ class AttackRoll:
 class DamageRoll:
     """
     Arguments:
+    attack_name -- the name of the attack used
     damage -- the damage roll result
     """
-    def __init__(self, damage):
+    def __init__(self, attack_name, damage):
+        self.attack_name = attack_name
         self.damage = damage
 
     def __repr__(self):
-        return 'DamageRoll(damage=%r)' % (self.damage)
+        return 'DamageRoll(attack_name=%r, damage=%r)' % (self.attack_name, self.damage)
 
     def pretty_print(self):
-        return 'damage %s' % (self.damage.pretty_print())
+        return '%s: damage %s' % (self.attack_name, '+'.join([str(x.total) for x in self.damage]))
 
 
 def parse_roll_content(original_roll, content):
@@ -68,12 +70,16 @@ def parse_roll_content(original_roll, content):
             roll_result.modifier = roll.get('expr')
     return roll_result
 
-def parse_attack_roll_content(content, rolls):
-    attack_name_pattern = re.compile('\{\{rname=\[(.+?)\]')
-    match = re.search(attack_name_pattern, content)
-    attack_name = ''
+def parse_attack_name(content):
+    attack_name_patterns = (
+        '\{\{rname=\[(.+?)\]',
+        '\{\{rname=(.+?)\}\}'
+    )
+    # format the list of possible patterns as alternations, with each option enclosed in a non-capturing group
+    search_pattern = re.compile('(?:' + ')|(?:'.join(attack_name_patterns) + ')')
+    match = re.search(search_pattern, content)
+    groups = match.groups()
     if match:
-        attack_name = match.group(1)
-    return AttackRoll(attack_name,
-            [SimpleRoll(roll.get('expression'), roll['results'].get('total')) for roll in rolls])
-
+        return next((x for x in groups if x is not None), None)
+    else:
+        return ''

@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from roll import parse_roll_content, parse_attack_roll_content, DiceRoll
+from roll import AttackRoll, DamageRoll, DiceRoll, SimpleRoll, parse_roll_content, parse_attack_name
 
 class Message:
     def __init__(self, player_name, avatar, timestamp, content):
@@ -42,7 +42,9 @@ class AttackRollMessage:
         self.timestamp = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc)
         self.content = content
         self.rolls = rolls
-        self.roll_result = parse_attack_roll_content(content, rolls)
+        self.roll_result = AttackRoll(parse_attack_name(content),
+                [SimpleRoll(roll.get('expression'), roll['results'].get('total')) for roll in rolls])
+
 
     def __repr__(self):
         return 'AttackRollMessage(player_name=%r, avatar=%r, timestamp=%r, content=%r, rolls=%r)' % (
@@ -52,3 +54,22 @@ class AttackRollMessage:
         return '(%s) %s: %s\n%s\n%s' % (self.timestamp.ctime(), self.player_name,
                 self.roll_result.pretty_print(), self.roll_result, self.content)
 
+class DamageRollMessage:
+    def __init__(self, player_name, avatar, timestamp, content, rolls):
+        self.player_name = player_name
+        self.avatar = avatar
+        # timestamps from the raw data are in milliseconds instead of seconds
+        self.timestamp = datetime.fromtimestamp(timestamp/1000, tz=timezone.utc)
+        self.content = content
+        self.rolls = rolls
+        self.roll_result = DamageRoll(parse_attack_name(content),
+                [SimpleRoll(roll.get('expression'), roll['results'].get('total')) for roll in rolls])
+
+
+    def __repr__(self):
+        return 'DamageRollMessage(player_name=%r, avatar=%r, timestamp=%r, content=%r, rolls=%r)' % (
+                self.player_name, self.avatar, self.timestamp, self.content, self.rolls)
+
+    def pretty_print(self):
+        return '(%s) %s: %s\n%s\n%s' % (self.timestamp.ctime(), self.player_name,
+                self.roll_result.pretty_print(), self.roll_result, self.content)
